@@ -18,7 +18,15 @@ export function useRecorder(onDone: (blob: Blob) => void) {
 
   async function start() {
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // 1. Optimize microphone constraints for human voice (saves massive space)
+      const stream = await navigator.mediaDevices.getUserMedia({ 
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 16000 // 16kHz is ideal for speech clarity and low data footprints
+        } 
+      })
+      
       const ctx = new AudioContext()
       const analyser = ctx.createAnalyser()
       analyser.fftSize = 512
@@ -26,7 +34,16 @@ export function useRecorder(onDone: (blob: Blob) => void) {
       const samples = new Uint8Array(analyser.fftSize)
 
       const chunks: Blob[] = []
-      const r = new MediaRecorder(stream)
+      
+      // 2. Set strict compression parameters (MIME type and low audio bitrate)
+      const recorderOptions = {
+        mimeType: 'audio/webm;codecs=opus', // Opus manages ultra-dense audio compression
+        audioBitsPerSecond: 32000 // 32kbps is the golden standard for clear voice diaries
+      }
+
+      // Initialize the recorder with our compression choices
+      const r = new MediaRecorder(stream, recorderOptions)
+      
       r.ondataavailable = (e) => chunks.push(e.data)
       r.onstop = () => {
         stream.getTracks().forEach((t) => t.stop())
@@ -34,7 +51,8 @@ export function useRecorder(onDone: (blob: Blob) => void) {
         clearTimers()
         setRecording(false)
         setLevels([])
-        done.current(new Blob(chunks, { type: r.mimeType || 'audio/webm' }))
+        // Forces the saved file to explicitly use the optimized compressed webm standard
+        done.current(new Blob(chunks, { type: 'audio/webm;codecs=opus' }))
       }
       r.start()
       rec.current = r

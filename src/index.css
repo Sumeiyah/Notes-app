@@ -1,0 +1,20 @@
+@import "tailwindcss";
+
+@theme {
+  --color-app: #000000;
+  --color-card: #1c1c1e;
+  --color-menu: #3a3a3c;
+  --color-muted: #8b8b92;
+  --color-accent: #f0684a;
+}
+
+body {
+  margin: 0;
+  background-color: var(--color-app);
+  color: #ffffff;
+  font-family: system-ui, sans-serif;
+}
+
+button {
+  cursor: pointer;
+}
